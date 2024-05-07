@@ -1,0 +1,30 @@
+{
+  "name": "STM8S-TM1637",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": "tm1637,stm8s",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/vshcryabets/stm8s-tm1637"
+  },
+  "authors":
+  [
+    {
+      "name": "indigo6alpha",
+      "email": "indigosixalpha164@gmail.com"
+    },
+    {
+      "name": "V.Shkriabets",
+      "email": "vshkriabets@2vsoft.com",
+      "maintainer": true
+    }
+  ],
+  "license": "GPLv3",
+  "homepage": "https://github.com/vshcryabets/stm8s-tm1637",
+  "dependencies": {
+    "ownername/print": "~1.3.0"
+  },
+  "frameworks": "*",
+  "platforms": "*"
+}

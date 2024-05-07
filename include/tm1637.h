@@ -1,6 +1,7 @@
 // indigo6alpha's TM1637 library for STM8SF103F3 MCU
 // Project started 3/17/2018
 // written by indigo6alpha (indigosixalpha164@gmail.com)
+//            2024 vshkriabets@2vsoft.com
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,52 +16,62 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#include <stdio.h>
-#include <time.h>
-#include "gpio.h"
+#ifdef USE_ARDUINO
+    #include "Arduino.h"
+#elif USE_STM8
+    #include "stm8s.h"
+    #include "stm8s_gpio.h"
+#endif
 
-/// <summary>
-/// Sleep for the specified time (in ms). It internally just calls the CLK delay function defined in clock.h
-/// </summary>
-void usleep(int milliseconds);
+struct TM1647State
+{
+    GPIO_TypeDef *bClock;
+    GPIO_Pin_TypeDef bClockP;
+    GPIO_TypeDef *bData;
+    GPIO_Pin_TypeDef bDataP;
+};
 
 /// <summary>
 /// Initialize tm1637 with the clock and data pins
 /// </summary>
-int tm1637Init(gpio_port_t bClock, gpio_pin_t bClockP, gpio_port_t bData, gpio_pin_t bDataP);
+void tm1637Init(struct TM1647State *state,
+               GPIO_TypeDef *bClock,
+               GPIO_Pin_TypeDef bClockP,
+               GPIO_TypeDef *bData,
+               GPIO_Pin_TypeDef bDataP);
 
 /// <summary>
 /// Start wire transaction
 /// </summary>
-static void tm1637Start(void);
+static void tm1637Start(struct TM1647State*);
 
 /// <summary>
 /// Stop wire transaction
 /// </summary>
-static void tm1637Stop(void);
+static void tm1637Stop(struct TM1647State*);
 
 /// <summary>
 /// Get data acknowledgement
 /// </summary>
-static unsigned char tm1637GetAck(void);
+static unsigned char tm1637GetAck(struct TM1647State*);
 
 /// <summary>
 /// Write a unsigned char to the controller
 /// </summary>
-static void tm1637WriteByte(unsigned char b);
+static void tm1637WriteByte(unsigned char b, struct TM1647State*);
 
 /// <summary>
 /// Write a sequence of unsigned chars to the controller
 /// </summary>
-static void tm1637Write(unsigned char *pData, unsigned char bLen);
+static void tm1637Write(unsigned char *pData, unsigned char bLen, struct TM1647State*);
 
 /// <summary>
 /// Set brightness (0-8)
 /// </summary>
-void tm1637SetBrightness(unsigned char b);
+void tm1637SetBrightness(unsigned char b, struct TM1647State*);
 
 /// <summary>
 /// Display a string of 4 digits and optional colon
 /// by passing a string such as "12:34" or "45 67"
 /// </summary>
-void tm1637ShowDigits(char *pString);
+void tm1637ShowDigits(char *pString, struct TM1647State*);

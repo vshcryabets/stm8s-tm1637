@@ -1,6 +1,7 @@
 // indigo6alpha's TM1637 library for STM8SF103F3 MCU
 // Project started 6/3/2018
 // written by indigo6alpha (indigosixalpha164@gmail.com)
+//            2024 vshkriabets@2vsoft.com
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,95 +16,84 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-#include "gpio.h"
 #include "tm1637.h"
-#include "clock.h"
 
 #define CLOCK_DELAY 0
-
-#define LOW 0
-#define HIGH 1
-
 
 // Table which translates a digit into the segments
 const unsigned char cDigit2Seg[] = {0x3f, 0x6, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f};
 
-static gpio_pin_t bClockPin, bDataPin;
-static gpio_port_t bClockPort, bDataPort;
-
-
-/// <summary>
-/// Sleep for the specified time (in ms). It internally just calls the CLK delay function defined in clock.h
-/// </summary>
-void usleep(int milliseconds)
-{
-	CLK_Delay_ms(milliseconds);
-}
+#ifdef USE_ARDUINO
+#define usleep(X) delay(X)
+#endif
 
 /// <summary>
 /// Initialize tm1637 with the clock and data pins
 /// </summary>
-int tm1637Init(gpio_port_t bClock, gpio_pin_t bClockP, gpio_port_t bData, gpio_pin_t bDataP)
+void tm1637Init(struct TM1647State *state,
+			   GPIO_TypeDef *bClock,
+			   GPIO_Pin_TypeDef bClockP,
+			   GPIO_TypeDef *bData,
+			   GPIO_Pin_TypeDef bDataP)
 {
-	bClockPort = bClock;
-	bDataPort = bData;
-	bClockPin = bClockP;
-	bDataPin = bDataP;
-	GPIO_Config_Pin(bClockPort, bClockPin, PIN_MODE_OUTPUT_PP);
-	GPIO_Config_Pin(bDataPort, bDataPin, PIN_MODE_OUTPUT_PP);
-	GPIO_Set_Pin_Low(bClockPort, bClockPin);
-	GPIO_Set_Pin_Low(bDataPort, bDataPin);
-	return 0;
+	state->bClock = bClock;
+	state->bClockP = bClockP;
+	state->bData = bData;
+	state->bDataP = bDataP;
+	GPIO_Init(bClock, bClockP, GPIO_MODE_OUT_PP_LOW_FAST); 
+	GPIO_Init(bData, bDataP, GPIO_MODE_OUT_PP_LOW_FAST);
+	GPIO_WriteLow(bClock, bClockP);
+	GPIO_WriteLow(bData, bDataP);
 }
 
 /// <summary>
 /// Start wire transaction
 /// </summary>
-static void tm1637Start(void)
+static void tm1637Start(struct TM1647State* state)
 {
-	GPIO_Set_Pin_High(bDataPort, bDataPin);
-	GPIO_Set_Pin_High(bClockPort, bClockPin);
+	GPIO_WriteHigh(state->bData, state->bDataP);
+	GPIO_WriteHigh(state->bClock, state->bClockP);
 	usleep(CLOCK_DELAY);
-	GPIO_Set_Pin_Low(bDataPort, bDataPin);
+	GPIO_WriteLow(state->bData, state->bDataP);
 }
 
 /// <summary>
 /// Stop wire transaction
 /// </summary>
-static void tm1637Stop(void)
+static void tm1637Stop(struct TM1647State* state)
 {
 	// clock low
-	GPIO_Set_Pin_Low(bClockPort, bClockPin);
+	GPIO_WriteLow(state->bClock, state->bClockP);
 	usleep(CLOCK_DELAY);
 	// data low
-	GPIO_Set_Pin_Low(bDataPort, bDataPin);
+	GPIO_WriteLow(state->bData, state->bDataP);
 	usleep(CLOCK_DELAY);
 	// clock high
-	GPIO_Set_Pin_High(bClockPort, bClockPin);
+	GPIO_WriteHigh(state->bClock, state->bClockP);
 	usleep(CLOCK_DELAY);
 	// data high
-	GPIO_Set_Pin_High(bDataPort, bDataPin);
+	GPIO_WriteHigh(state->bData, state->bDataP);
 } 
 
 /// <summary>
 /// Get data ack
 /// </summary>
-static unsigned char tm1637GetAck(void)
+static unsigned char tm1637GetAck(struct TM1647State* state)
 {
 	unsigned char bAck = 1;
 
 	// read ack
 	// clock to low
-	GPIO_Set_Pin_Low(bClockPort, bClockPin);
+	GPIO_WriteLow(state->bClock, state->bClockP);
 	// data as input
 	
 	usleep(CLOCK_DELAY);
 
 	// clock high
-	GPIO_Set_Pin_High(bClockPort, bClockPin);
+	GPIO_WriteHigh(state->bClock, state->bClockP);
 	usleep(CLOCK_DELAY);
 	// clock to low
-	GPIO_Set_Pin_Low(bClockPort, bClockPin);
+	GPIO_WriteLow(state->bClock, state->bClockP);
 	return bAck;
 }
 
@@ -111,22 +101,22 @@ static unsigned char tm1637GetAck(void)
 /// <summary>
 /// Write a unsigned char to the controller
 /// </summary>
-static void tm1637WriteByte(unsigned char b)
+static void tm1637WriteByte(unsigned char b, struct TM1647State* state)
 {
 	unsigned char i;
 
 	for (i=0; i<8; i++)
 	{
 		// clock low
-		GPIO_Set_Pin_Low(bClockPort, bClockPin);
+		GPIO_WriteLow(state->bClock, state->bClockP);
 		// LSB to MSB
 		if (b & 1) 
-			GPIO_Set_Pin_High(bDataPort, bDataPin);
+			GPIO_WriteHigh(state->bData, state->bDataP);
 		else
-			GPIO_Set_Pin_Low(bDataPort, bDataPin);
+			GPIO_WriteLow(state->bData, state->bDataP);
 		usleep(CLOCK_DELAY);
 		// clock high
-		GPIO_Set_Pin_High(bClockPort, bClockPin);
+		GPIO_WriteHigh(state->bClock, state->bClockP);
 		usleep(CLOCK_DELAY);
 		b >>= 1;
 	}
@@ -135,23 +125,23 @@ static void tm1637WriteByte(unsigned char b)
 /// <summary>
 /// Write a sequence of unsigned chars to the controller
 /// </summary>
-static void tm1637Write(unsigned char *pData, unsigned char bLen)
+static void tm1637Write(unsigned char *pData, unsigned char bLen, struct TM1647State* state)
 {
 	unsigned char b, bAck;
 	bAck = 1;
-	tm1637Start();
+	tm1637Start(state);
 	for (b=0; b<bLen; b++)
 	{
-		tm1637WriteByte(pData[b]);
-		bAck &= tm1637GetAck();
+		tm1637WriteByte(pData[b], state);
+		bAck &= tm1637GetAck(state);
 	}
-	tm1637Stop();
+	tm1637Stop(state);
 } 
 
 /// <summary>
 /// Set brightness (0-8)
 /// </summary>
-void tm1637SetBrightness(unsigned char b)
+void tm1637SetBrightness(unsigned char b, struct TM1647State* state)
 {
 	unsigned char bControl;
 	if (b == 0) 
@@ -162,14 +152,14 @@ void tm1637SetBrightness(unsigned char b)
 		if (b > 8) b = 8;
 		bControl = 0x88 | (b - 1);
 	}
-	tm1637Write(&bControl, 1);
+	tm1637Write(&bControl, 1, state);
 } 
 
 /// <summary>
 /// Display a string of 4 digits and optional colon
 /// by passing a string such as "12:34" or "45 67"
 /// </summary>
-void tm1637ShowDigits(char *pString)
+void tm1637ShowDigits(char *pString, struct TM1647State* state)
 {
 	// commands and data to transmit
 	unsigned char b, bTemp[16]; 
@@ -178,7 +168,7 @@ void tm1637ShowDigits(char *pString)
 	j = 0;
 	// memory write command (auto increment mode)
 	bTemp[0] = 0x40;
-	tm1637Write(bTemp, 1);
+	tm1637Write(bTemp, 1, state);
 
 	// set display address to first digit command
 	bTemp[j++] = 0xc0;
@@ -206,5 +196,5 @@ void tm1637ShowDigits(char *pString)
 		}
 	}
 	// send to the display
-	tm1637Write(bTemp, j); 
+	tm1637Write(bTemp, j, state); 
 }
