@@ -23,12 +23,21 @@
     #include "stm8s_gpio.h"
 #endif
 
+#ifdef WITH_DEC_FONT
+extern char tm1637DecFont[12];
+#endif
+#ifdef WITH_HEX_FONT
+extern char tm1637HexFont[18];
+#endif
+
 struct TM1647State
 {
     GPIO_TypeDef *bClock;
     GPIO_Pin_TypeDef bClockP;
     GPIO_TypeDef *bData;
     GPIO_Pin_TypeDef bDataP;
+    const uint8_t *font;
+    uint8_t ledCount;
 };
 
 /// <summary>
@@ -38,7 +47,8 @@ void tm1637Init(struct TM1647State *state,
                GPIO_TypeDef *bClock,
                GPIO_Pin_TypeDef bClockP,
                GPIO_TypeDef *bData,
-               GPIO_Pin_TypeDef bDataP);
+               GPIO_Pin_TypeDef bDataP,
+               const uint8_t *font);
 
 /// <summary>
 /// Start wire transaction
@@ -75,3 +85,8 @@ void tm1637SetBrightness(unsigned char b, struct TM1647State*);
 /// by passing a string such as "12:34" or "45 67"
 /// </summary>
 void tm1637ShowDigits(char *pString, struct TM1647State*);
+
+uint8_t tm1637charToFont(struct TM1647State* state, char c);
+void tm1637WriteFontBytes(struct TM1647State*, char *symbols, uint8_t len);
+void tm1637ShowInt(struct TM1647State* state, uint16_t value);
+// uint8_t tm1637decToFont(uint8_t dec);

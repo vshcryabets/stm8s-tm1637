@@ -7,3 +7,5 @@ A library to configure and control TM1637 4-digit 7-segment display module. This
 
 **USE_STM8** - use STM* headers.
 
+**WITH_DEC_FONT** - include font for 0-9 numbers (tm1637DecFont array).
+**WITH_HEX_FONT** - include font for 0-9A-F numbers (tm1637HexFont array).
