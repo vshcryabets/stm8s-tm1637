@@ -1,6 +1,6 @@
 {
   "name": "STM8S-TM1637",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "keywords": "tm1637,stm8s",
   "repository":
@@ -25,6 +25,6 @@
   "dependencies": {
     "ownername/print": "~1.3.0"
   },
-  "frameworks": "*",
-  "platforms": "*"
+  "frameworks": ["arduino","ststm8"],
+  "platforms": "ststm8"
 }
