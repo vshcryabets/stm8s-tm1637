@@ -1,6 +1,6 @@
 {
   "name": "STM8S-TM1637",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A library to configure and control TM1637 4-digit 7-segment display module.",
   "keywords": "tm1637,stm8s",
   "repository":
