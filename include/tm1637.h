@@ -30,7 +30,7 @@ extern char tm1637DecFont[12];
 extern char tm1637HexFont[18];
 #endif
 
-struct TM1647State
+struct TM1637State
 {
     GPIO_TypeDef *bClock;
     GPIO_Pin_TypeDef bClockP;
@@ -45,50 +45,55 @@ struct TM1647State
 #endif    
 };
 
+struct TM1637Config {
+    GPIO_TypeDef *clockPort;
+    GPIO_Pin_TypeDef clockPin;
+    GPIO_TypeDef *dataPort;
+    GPIO_Pin_TypeDef dataPin;
+    const uint8_t *font;
+};
+
 /// <summary>
 /// Initialize tm1637 with the clock and data pins
 /// </summary>
-void tm1637Init(struct TM1647State *state,
-               GPIO_TypeDef *bClock,
-               GPIO_Pin_TypeDef bClockP,
-               GPIO_TypeDef *bData,
-               GPIO_Pin_TypeDef bDataP,
-               const uint8_t *font
-               );
+void tm1637Init(struct TM1637State *state,
+                struct TM1637Config *config);
 
 /// <summary>
 /// Start wire transaction
 /// </summary>
-static void tm1637Start(struct TM1647State*);
+static void tm1637Start(struct TM1637State*);
 
 /// <summary>
 /// Stop wire transaction
 /// </summary>
-static void tm1637Stop(struct TM1647State*);
+static void tm1637Stop(struct TM1637State*);
 
 /// <summary>
 /// Get data acknowledgement
 /// </summary>
-static unsigned char tm1637GetAck(struct TM1647State*);
-
-/// <summary>
-/// Write a unsigned char to the controller
-/// </summary>
-static void tm1637WriteByte(unsigned char b, struct TM1647State*);
+static unsigned char tm1637GetAck(struct TM1637State*);
 
 /// <summary>
 /// Write a sequence of unsigned chars to the controller
 /// </summary>
-static void tm1637Write(unsigned char *pData, unsigned char bLen, struct TM1647State*);
+static void tm1637Write(unsigned char *pData, unsigned char bLen, struct TM1637State*);
 
 /// <summary>
 /// Set brightness (0-8)
 /// </summary>
-void tm1637SetBrightness(unsigned char b, struct TM1647State*);
+void tm1637SetBrightness(unsigned char b, struct TM1637State*);
 
 /// <summary>
 /// Display a string of 4 digits and optional colon
 /// by passing a string such as "12:34" or "45 67"
 /// </summary>
-void tm1637ShowDigits(char *pString, struct TM1647State*);
-void tm1637ShowInt(struct TM1647State* state, uint16_t value);
+void tm1637ShowDigits(char *pString, struct TM1637State*);
+/// <summary>
+/// Display a 4 digits decimal without colon
+/// </summary>
+void tm1637ShowInt(struct TM1637State *state, uint16_t value, bool showColon);
+/// <summary>
+/// Show or hide colon.
+/// </summary>
+void tm1637ShowColon(struct TM1637State* state, bool value);
